@@ -3,76 +3,76 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-import { FaUpload, FaFileAlt, FaSignOutAlt, FaTrash, FaEye, FaCheckCircle } from 'react-icons/fa';
+import {
+  FaUpload,
+  FaFileAlt,
+  FaSignOutAlt,
+  FaTrash,
+  FaEye,
+  FaCheckCircle,
+  FaHeartbeat,
+  FaClock,
+  FaUserCircle,
+  FaShieldAlt,
+  FaBrain,
+  FaArrowUp,
+  FaNotesMedical,
+  FaFolderOpen,
+} from 'react-icons/fa';
 
 const STEPS = [
-  { icon: '🔍', label: 'Extracting text...' },
-  { icon: '💡', label: 'Simplifying report...' },
-  { icon: '🛡️', label: 'Generating precautions...' },
-  { icon: '⚡', label: 'Short-term consequences...' },
-  { icon: '📅', label: 'Long-term consequences...' },
-  { icon: '🥗', label: 'Diet advice...' },
-  { icon: '✅', label: 'Getting report ready...' },
+  { icon: '📄', label: 'Reading report...' },
+  { icon: '🧠', label: 'Understanding medical terms...' },
+  { icon: '🔍', label: 'Finding important values...' },
+  { icon: '💡', label: 'Preparing simple explanation...' },
+  { icon: '✅', label: 'Finishing analysis...' },
 ];
 
 const LoadingOverlay = ({ currentStep }) => (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-    <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md mx-4">
-      {/* Spinner */}
-      <div className="flex justify-center mb-6">
-        <div className="relative w-20 h-20">
-          <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-t-blue-500 animate-spin"></div>
-          <span className="absolute inset-0 flex items-center justify-center text-2xl">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4">
+    <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+      <div className="text-center mb-6">
+        <div className="relative mx-auto mb-4 h-16 w-16">
+          <div className="absolute inset-0 rounded-full border-4 border-teal-100"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-t-teal-500 animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center text-xl">
             {STEPS[currentStep]?.icon || '⚙️'}
-          </span>
+          </div>
         </div>
+        <h2 className="text-xl font-bold text-slate-900">Analyzing report</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Please wait while your medical summary is being prepared.
+        </p>
       </div>
 
-      <h2 className="text-center text-xl font-bold text-gray-800 mb-1">Analyzing Report</h2>
-      <p className="text-center text-gray-400 text-sm mb-8">Please wait, this may take a minute...</p>
-
-      {/* Steps list */}
       <div className="space-y-3">
         {STEPS.map((step, index) => {
-          const isDone = index < currentStep;
-          const isActive = index === currentStep;
-          const isPending = index > currentStep;
+          const done = index < currentStep;
+          const active = index === currentStep;
 
           return (
             <div
               key={index}
-              className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-500 ${
-                isActive ? 'bg-blue-50 border border-blue-200 scale-[1.02]' :
-                isDone ? 'bg-green-50' : 'opacity-40'
+              className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${
+                active
+                  ? 'bg-teal-50 border-teal-200'
+                  : done
+                  ? 'bg-emerald-50 border-emerald-100'
+                  : 'bg-slate-50 border-slate-100'
               }`}
             >
-              {/* Status icon */}
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
-                isDone ? 'bg-green-500 text-white' :
-                isActive ? 'bg-blue-500 text-white' :
-                'bg-gray-200 text-gray-400'
-              }`}>
-                {isDone ? <FaCheckCircle /> : isActive ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : index + 1}
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
+                  done
+                    ? 'bg-emerald-500 text-white'
+                    : active
+                    ? 'bg-teal-500 text-white'
+                    : 'bg-slate-200 text-slate-500'
+                }`}
+              >
+                {done ? <FaCheckCircle /> : active ? '•' : index + 1}
               </div>
-
-              {/* Step label */}
-              <span className={`text-sm font-medium ${
-                isActive ? 'text-blue-700' :
-                isDone ? 'text-green-700' :
-                'text-gray-400'
-              }`}>
-                {step.icon} {step.label}
-              </span>
-
-              {isDone && (
-                <span className="ml-auto text-xs text-green-500 font-semibold">Done</span>
-              )}
-              {isActive && (
-                <span className="ml-auto text-xs text-blue-500 font-semibold animate-pulse">Processing</span>
-              )}
+              <span className="text-sm font-medium text-slate-700">{step.label}</span>
             </div>
           );
         })}
@@ -84,9 +84,10 @@ const LoadingOverlay = ({ currentStep }) => (
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
   const [reports, setReports] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
   const stepTimerRef = useRef(null);
 
@@ -99,9 +100,9 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get('http://localhost:5000/api/reports', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setReports(response.data.data);
+      setReports(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch reports:', error);
     }
@@ -112,12 +113,9 @@ const Dashboard = () => {
     let step = 0;
     stepTimerRef.current = setInterval(() => {
       step += 1;
-      if (step < STEPS.length) {
-        setCurrentStep(step);
-      } else {
-        clearInterval(stepTimerRef.current);
-      }
-    }, 3500);
+      if (step < STEPS.length) setCurrentStep(step);
+      else clearInterval(stepTimerRef.current);
+    }, 2200);
   };
 
   const stopSteps = () => {
@@ -128,20 +126,26 @@ const Dashboard = () => {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/tiff'];
     if (!validTypes.includes(file.type)) {
       toast.error('Please upload PDF or image files only');
       return;
     }
+
     if (file.size > 10 * 1024 * 1024) {
       toast.error('File size must be less than 10MB');
       return;
     }
+
     setSelectedFile(file);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) { toast.error('Please select a file first'); return; }
+    if (!selectedFile) {
+      toast.error('Please select a file first');
+      return;
+    }
 
     setIsUploading(true);
     startSteps();
@@ -154,12 +158,17 @@ const Dashboard = () => {
       const response = await axios.post(
         'http://localhost:5000/api/reports/upload',
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       stopSteps();
-      await new Promise(r => setTimeout(r, 800));
-      toast.success('Report analyzed successfully!');
+      await new Promise((r) => setTimeout(r, 700));
+      toast.success('Report analyzed successfully');
       setSelectedFile(null);
       fetchReports();
       navigate(`/report/${response.data.data.reportId}`);
@@ -174,10 +183,11 @@ const Dashboard = () => {
 
   const handleDelete = async (reportId) => {
     if (!window.confirm('Are you sure you want to delete this report?')) return;
+
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`http://localhost:5000/api/reports/${reportId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Report deleted successfully');
       fetchReports();
@@ -186,125 +196,249 @@ const Dashboard = () => {
     }
   };
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const lastUpload =
+    reports.length > 0
+      ? new Date(reports[0].uploadDate).toLocaleDateString('en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : 'No uploads yet';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-
-      {/* Loading Overlay */}
+    <div className="min-h-screen bg-slate-100">
       {isUploading && currentStep >= 0 && <LoadingOverlay currentStep={currentStep} />}
 
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">🏥 Medical AI Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600">Welcome, {user?.name}</span>
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-600 text-white shadow-sm">
+              <FaHeartbeat />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-900">Medical Reports Dashboard</h1>
+              <p className="text-sm text-slate-500">Patient workspace</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700">
+              <FaUserCircle className="text-teal-600" />
+              {user?.name || 'User'}
+            </div>
+
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-              <FaSignOutAlt /> Logout
+              <FaSignOutAlt />
+              Logout
             </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-
-        {/* Upload Section */}
-        <div className="card mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <FaUpload /> Upload Medical Report
-          </h2>
-
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
-            <input
-              type="file"
-              id="fileInput"
-              onChange={handleFileSelect}
-              accept=".pdf,.jpg,.jpeg,.png,.tiff"
-              className="hidden"
-            />
-
-            {!selectedFile ? (
-              <label htmlFor="fileInput" className="cursor-pointer block">
-                <FaFileAlt className="mx-auto text-6xl text-gray-300 mb-4" />
-                <p className="text-gray-600 mb-2 font-medium">Click to select a medical report</p>
-                <p className="text-sm text-gray-400">PDF, JPG, PNG supported • Max 10MB</p>
-              </label>
-            ) : (
-              <div>
-                <FaFileAlt className="mx-auto text-4xl text-blue-400 mb-3" />
-                <p className="text-gray-700 mb-5">
-                  Selected: <strong>{selectedFile.name}</strong>
-                </p>
-                <div className="flex gap-4 justify-center">
-                  <button
-                    onClick={handleUpload}
-                    disabled={isUploading}
-                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUploading ? 'Analyzing...' : 'Analyze Report'}
-                  </button>
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    disabled={isUploading}
-                    className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
+              <FaFolderOpen />
+            </div>
+            <p className="text-sm text-slate-500">Total Reports</p>
+            <h3 className="mt-1 text-3xl font-bold text-slate-900">{reports.length}</h3>
           </div>
 
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
-              ⚠️ <strong>Disclaimer:</strong> This is an educational tool. Not a substitute for professional medical advice.
-            </p>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600">
+              <FaClock />
+            </div>
+            <p className="text-sm text-slate-500">Last Upload</p>
+            <h3 className="mt-1 text-lg font-bold text-slate-900">{lastUpload}</h3>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <FaBrain />
+            </div>
+            <p className="text-sm text-slate-500">AI Status</p>
+            <h3 className="mt-1 text-lg font-bold text-slate-900">Ready to analyze</h3>
           </div>
         </div>
 
-        {/* Reports List */}
-        <div className="card">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Your Reports</h2>
+        <div className="grid gap-6">
+  <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="mb-6 flex items-start justify-between gap-4">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-600">
+          Upload Center
+        </p>
+        <h2 className="mt-2 text-2xl font-bold text-slate-900">
+          Upload and analyze a medical report
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-500 max-w-3xl">
+          Upload your file to generate a clear summary, understand key findings,
+          and review your medical report in a more patient-friendly format.
+        </p>
+      </div>
+
+      <div className="hidden sm:flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600">
+        <FaUpload className="text-xl" />
+      </div>
+    </div>
+
+    <input
+      type="file"
+      id="fileInput"
+      onChange={handleFileSelect}
+      accept=".pdf,.jpg,.jpeg,.png,.tiff"
+      className="hidden"
+    />
+
+    {!selectedFile ? (
+      <label
+        htmlFor="fileInput"
+        className="block cursor-pointer rounded-[28px] border-2 border-dashed border-slate-300 bg-slate-50 p-10 md:p-14 text-center transition hover:border-teal-400 hover:bg-teal-50"
+      >
+        <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-[28px] bg-white text-teal-600 shadow-sm border border-slate-200">
+          <FaUpload className="text-4xl" />
+        </div>
+
+        <h3 className="text-2xl font-bold text-slate-900">
+          Select report from your device
+        </h3>
+
+        <p className="mt-3 text-sm sm:text-base text-slate-500 max-w-2xl mx-auto leading-7">
+          Upload your medical report to get an AI-generated explanation, simplified findings,
+          and an easier way to review your health information.
+        </p>
+
+        <div className="mt-7 inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-3.5 text-sm font-semibold text-white">
+          Upload Report
+          <FaArrowUp className="text-xs" />
+        </div>
+      </label>
+    ) : (
+      <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-6 md:p-8">
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4 min-w-0">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] bg-white text-teal-600 border border-slate-200">
+              <FaFileAlt className="text-2xl" />
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-sm text-slate-500">Selected file</p>
+              <h3 className="truncate text-xl font-bold text-slate-900">
+                {selectedFile.name}
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleUpload}
+              disabled={isUploading}
+              className="rounded-full bg-teal-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:opacity-50"
+            >
+              {isUploading ? 'Analyzing...' : 'Analyze Report'}
+            </button>
+
+            <button
+              onClick={() => setSelectedFile(null)}
+              disabled={isUploading}
+              className="rounded-full bg-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-300 disabled:opacity-50"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </section>
+</div>
+
+        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900">Recent Reports</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Access, review, and manage previously uploaded reports.
+              </p>
+            </div>
+          </div>
+
           {reports.length === 0 ? (
-            <p className="text-center text-gray-400 py-10">
-              No reports yet. Upload your first medical report above!
-            </p>
+            <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400">
+                <FaFileAlt className="text-xl" />
+              </div>
+              <h4 className="text-lg font-bold text-slate-900">No reports yet</h4>
+              <p className="mt-2 text-sm text-slate-500">
+                Upload a report from the workspace above to see it here.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-3">
-              {reports.map((report) => (
-                <div key={report._id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold text-gray-800 mb-1">{report.fileName}</h3>
-                    <p className="text-sm text-gray-400">
-                      {new Date(report.uploadDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      {' · '}{report.processingTime}s
-                    </p>
+            <div className="overflow-hidden rounded-[24px] border border-slate-200">
+              <div className="hidden md:grid grid-cols-[1.6fr_0.7fr_0.7fr] bg-slate-50 px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div>Report</div>
+                <div>Date</div>
+                <div>Actions</div>
+              </div>
+
+              <div className="divide-y divide-slate-200">
+                {reports.map((report) => (
+                  <div
+                    key={report._id}
+                    className="grid gap-4 px-5 py-5 md:grid-cols-[1.6fr_0.7fr_0.7fr] md:items-center"
+                  >
+                    <div className="flex items-start gap-4 min-w-0">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-teal-600">
+                        <FaFileAlt />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="truncate font-bold text-slate-900">{report.fileName}</h4>
+                        <p className="mt-1 text-sm text-slate-500">
+                          AI analyzed medical report
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-slate-600">
+                      {new Date(report.uploadDate).toLocaleDateString('en-US', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => navigate(`/report/${report._id}`)}
+                        className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
+                      >
+                        <FaEye />
+                        View
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(report._id)}
+                        className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+                      >
+                        <FaTrash />
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => navigate(`/report/${report._id}`)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center gap-2 text-sm"
-                    >
-                      <FaEye /> View
-                    </button>
-                    <button
-                      onClick={() => handleDelete(report._id)}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
-        </div>
-
-      </div>
+        </section>
+      </main>
     </div>
   );
 };
