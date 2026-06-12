@@ -4,6 +4,10 @@ backend/.env.local
 backend/.env.production
 backend/.env.staging
 
+# ─── CLOUDINARY (sensitive API keys) ───────────────────────────
+# CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+# are stored in backend/.env which is already ignored above
+
 # ─── UPLOADED MEDICAL FILES (sensitive patient data) ────────────
 backend/uploads/*
 !backend/uploads/.gitkeep

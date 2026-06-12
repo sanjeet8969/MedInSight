@@ -1,6 +1,8 @@
 const Report = require('../models/Report');
 const ocrService = require('../services/ocrService');
 const ollamaService = require('../services/ollamaService');
+const { deidentifyText } = require('../services/deidentifyService');
+const { cloudinary } = require('../config/cloudinary');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -11,84 +13,84 @@ exports.uploadReport = async (req, res) => {
   const startTime = Date.now();
 
   try {
-    // Check if file was uploaded
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please upload a file'
-      });
+      return res.status(400).json({ success: false, message: 'Please upload a file' });
     }
 
-    const filePath = req.file.path;
     const fileName = req.file.originalname;
+    const fileUrl = req.file.path;
+    const cloudinaryPublicId = req.file.filename;
     const fileExt = path.extname(fileName).toLowerCase();
-    
-    // Determine file type
     const fileType = fileExt === '.pdf' ? 'pdf' : 'image';
 
     console.log(`📄 Processing file: ${fileName}`);
+    console.log(`☁️  Cloudinary URL: ${fileUrl}`);
 
-    // Step 1: Extract text using OCR
+    // Step 1: Extract text via OCR from Cloudinary URL
     console.log('🔍 Step 1: Extracting text...');
-    const extractedText = await ocrService.extractText(filePath, fileType);
+    const extractedText = await ocrService.extractText(fileUrl, fileType);
 
-    // Validate if it's a medical report
+    // Validate medical content
     const validation = ocrService.validateMedicalText(extractedText);
     if (!validation.isValid) {
-      // Delete uploaded file
-      await fs.unlink(filePath);
-      return res.status(400).json({
-        success: false,
-        message: validation.message
-      });
+      await cloudinary.uploader.destroy(cloudinaryPublicId);
+      return res.status(400).json({ success: false, message: validation.message });
     }
 
-    // Step 2: Check Ollama health
-    console.log('🤖 Step 2: Checking Ollama connection...');
+    // De-identify: remove personal info before sending to AI
+    const cleanedText = deidentifyText(extractedText);
+    console.log('🔒 Personal info stripped before AI processing');
+
+    // Step 2: Check Ollama
+    console.log('🤖 Step 2: Checking Ollama...');
     const isOllamaRunning = await ollamaService.checkHealth();
     if (!isOllamaRunning) {
-      await fs.unlink(filePath);
-      return res.status(503).json({
-        success: false,
-        message: 'AI service (Ollama) is not running. Please start Ollama and try again.'
-      });
+      await cloudinary.uploader.destroy(cloudinaryPublicId);
+      return res.status(503).json({ success: false, message: 'AI service is not running. Please start Ollama.' });
     }
 
-    // Step 3: Simplify report using Ollama
-    console.log('💡 Step 3: Simplifying medical text...');
-    const simplifiedText = await ollamaService.simplifyReport(extractedText);
+    // Step 3: Simplify report
+    console.log('💡 Step 3: Simplifying report...');
+    const simplifiedText = await ollamaService.simplifyReport(cleanedText);
 
-    // Step 4: Extract key findings
-    console.log('🔑 Step 4: Extracting key findings...');
-    const keyFindings = await ollamaService.extractKeyFindings(extractedText);
+    // Step 4: Precautions
+    console.log('🛡️  Step 4: Generating precautions...');
+    const precautions = await ollamaService.generatePrecautions(cleanedText);
 
-    // Step 5: Generate recommendations
-    console.log('📋 Step 5: Generating recommendations...');
-    const recommendations = await ollamaService.generateRecommendations(
-      simplifiedText,
-      keyFindings
-    );
+    // Step 5: Short term consequences
+    console.log('⚡ Step 5: Short-term consequences...');
+    const shortTermConsequences = await ollamaService.generateShortTermConsequences(cleanedText);
 
-    // Calculate processing time
+    // Step 6: Long term consequences
+    console.log('📅 Step 6: Long-term consequences...');
+    const longTermConsequences = await ollamaService.generateLongTermConsequences(cleanedText);
+
+    // Step 7: Diet advice
+    console.log('🥗 Step 7: Diet advice...');
+    const dietAdvice = await ollamaService.generateDietAdvice(cleanedText);
+
     const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
-    // Step 6: Save to database
-    console.log('💾 Step 6: Saving to database...');
+    // Step 8: Save to database
+    console.log('💾 Step 8: Saving to database...');
     const report = await Report.create({
       userId: req.user._id,
       fileName,
-      filePath,
+      fileUrl,
+      cloudinaryPublicId,
       fileType,
       reportType: 'general',
       originalText: extractedText,
       simplifiedText,
-      keyFindings,
-      recommendations,
+      precautions,
+      shortTermConsequences,
+      longTermConsequences,
+      dietAdvice,
       processingTime: parseFloat(processingTime),
       status: 'completed'
     });
 
-    console.log(`✅ Report processed successfully in ${processingTime}s`);
+    console.log(`✅ Report processed in ${processingTime}s`);
 
     res.status(201).json({
       success: true,
@@ -96,31 +98,23 @@ exports.uploadReport = async (req, res) => {
       data: {
         reportId: report._id,
         fileName: report.fileName,
+        fileUrl: report.fileUrl,
         uploadDate: report.uploadDate,
         simplifiedText: report.simplifiedText,
-        keyFindings: report.keyFindings,
-        recommendations: report.recommendations,
+        precautions: report.precautions,
+        shortTermConsequences: report.shortTermConsequences,
+        longTermConsequences: report.longTermConsequences,
+        dietAdvice: report.dietAdvice,
         processingTime: report.processingTime
       }
     });
 
   } catch (error) {
     console.error('❌ Report Upload Error:', error);
-    
-    // Clean up uploaded file if exists
-    if (req.file) {
-      try {
-        await fs.unlink(req.file.path);
-      } catch (err) {
-        console.error('Failed to delete file:', err);
-      }
+    if (req.file?.filename) {
+      try { await cloudinary.uploader.destroy(req.file.filename); } catch (_) {}
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Failed to process report',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Failed to process report', error: error.message });
   }
 };
 
@@ -130,50 +124,25 @@ exports.uploadReport = async (req, res) => {
 exports.getReports = async (req, res) => {
   try {
     const reports = await Report.find({ userId: req.user._id })
-      .select('-originalText -filePath')
+      .select('-originalText')
       .sort({ uploadDate: -1 });
 
-    res.status(200).json({
-      success: true,
-      count: reports.length,
-      data: reports
-    });
+    res.status(200).json({ success: true, count: reports.length, data: reports });
   } catch (error) {
-    console.error('❌ Get Reports Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch reports'
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch reports' });
   }
 };
 
-// @desc    Get single report by ID
+// @desc    Get single report
 // @route   GET /api/reports/:id
 // @access  Private
 exports.getReportById = async (req, res) => {
   try {
-    const report = await Report.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
-
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: report
-    });
+    const report = await Report.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found' });
+    res.status(200).json({ success: true, data: report });
   } catch (error) {
-    console.error('❌ Get Report Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch report'
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch report' });
   }
 };
 
@@ -182,38 +151,20 @@ exports.getReportById = async (req, res) => {
 // @access  Private
 exports.deleteReport = async (req, res) => {
   try {
-    const report = await Report.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    const report = await Report.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found' });
 
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
-    }
-
-    // Delete file from filesystem
+    // Delete from Cloudinary
     try {
-      await fs.unlink(report.filePath);
+      await cloudinary.uploader.destroy(report.cloudinaryPublicId);
     } catch (err) {
-      console.error('Failed to delete file:', err);
+      console.error('Cloudinary delete error:', err);
     }
 
-    // Delete from database
     await report.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: 'Report deleted successfully'
-    });
+    res.status(200).json({ success: true, message: 'Report deleted successfully' });
   } catch (error) {
-    console.error('❌ Delete Report Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete report'
-    });
+    res.status(500).json({ success: false, message: 'Failed to delete report' });
   }
 };
 
@@ -223,44 +174,14 @@ exports.deleteReport = async (req, res) => {
 exports.askQuestion = async (req, res) => {
   try {
     const { question } = req.body;
+    if (!question) return res.status(400).json({ success: false, message: 'Please provide a question' });
 
-    if (!question) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a question'
-      });
-    }
+    const report = await Report.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found' });
 
-    const report = await Report.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
-
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
-    }
-
-    // Get answer from Ollama
-    const answer = await ollamaService.answerQuestion(
-      report.originalText,
-      question
-    );
-
-    res.status(200).json({
-      success: true,
-      data: {
-        question,
-        answer
-      }
-    });
+    const answer = await ollamaService.answerQuestion(report.originalText, question);
+    res.status(200).json({ success: true, data: { question, answer } });
   } catch (error) {
-    console.error('❌ Ask Question Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to answer question'
-    });
+    res.status(500).json({ success: false, message: 'Failed to answer question' });
   }
 };
