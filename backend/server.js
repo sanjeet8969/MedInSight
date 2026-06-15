@@ -1,3 +1,6 @@
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -27,7 +30,10 @@ app.use('/api/', limiter);
 
 // CORS Configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3002'
+  ],
   credentials: true,
   optionsSuccessStatus: 200
 };
