@@ -18,9 +18,9 @@ exports.sendOTPEmail = async (userEmail, userName, otp, purpose) => {
     const transporter = createTransporter();
 
     const subjects = {
-      register: '✅ Verify Your Account - Medical AI',
-      login: '🔐 Your Login OTP - Medical AI',
-      reset: '🔑 Password Reset OTP - Medical AI'
+      register: '✅ Verify Your Account - MedInSight',
+      login: '🔐 Your Login OTP - MedInSight',
+      reset: '🔑 Password Reset OTP - MedInSight'
     };
 
     const headings = {
@@ -42,7 +42,7 @@ exports.sendOTPEmail = async (userEmail, userName, otp, purpose) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 10px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #3B82F6; font-size: 28px;">🏥 Medical AI</h1>
+            <h1 style="color: #3B82F6; font-size: 28px;">🏥 MedInSight</h1>
             <p style="color: #6B7280; font-size: 16px;">${headings[purpose]}</p>
           </div>
 
@@ -87,11 +87,11 @@ exports.sendWelcomeEmail = async (userEmail, userName) => {
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: userEmail,
-      subject: '🏥 Welcome to Medical AI Report Analyzer',
+      subject: '🏥 Welcome to MedInSight Report Analyzer',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 10px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #3B82F6; font-size: 28px;">🏥 Medical AI</h1>
+            <h1 style="color: #3B82F6; font-size: 28px;">🏥 MedInSight</h1>
             <p style="color: #6B7280; font-size: 16px;">AI-Based Medical Report Analysis System</p>
           </div>
 

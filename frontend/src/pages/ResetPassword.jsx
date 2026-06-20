@@ -132,7 +132,7 @@ const ResetPassword = () => {
                 <FaHeartbeat className="text-white text-lg" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Medical AI</h1>
+                <h1 className="text-2xl font-bold">MedInSight</h1>
                 <p className="text-sm text-cyan-100/80">Smart medical report platform</p>
               </div>
             </div>
@@ -189,7 +189,7 @@ const ResetPassword = () => {
               <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-200">
                 <FaHeartbeat className="text-white text-2xl" />
               </div>
-              <h1 className="text-3xl font-bold text-slate-900 mt-4">Medical AI</h1>
+              <h1 className="text-3xl font-bold text-slate-900 mt-4">MedInSight</h1>
               <p className="text-slate-500 mt-2">Reset your password</p>
             </div>
 
