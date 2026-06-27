@@ -22,7 +22,7 @@ import {
 
 const STEPS = [
   { icon: '📄', label: 'Reading report...' },
-  { icon: '🧠', label: 'Understanding medical terms...' },
+  { icon: '🧠', label: 'Extracting Text....' },
   { icon: '🔍', label: 'Finding important values...' },
   { icon: '💡', label: 'Preparing simple explanation...' },
   { icon: '✅', label: 'Finishing analysis...' },
